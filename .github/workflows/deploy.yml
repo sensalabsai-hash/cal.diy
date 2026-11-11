@@ -1,0 +1,46 @@
+name: Deploy cal.diy to Vercel
+
+# Trigger manual — você clica em "Run workflow" no GitHub
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Enable Yarn 4
+        run: corepack enable
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Link Vercel project
+        run: vercel link --yes --token ${{ secrets.VERCEL_TOKEN }} --project cal-diy
+
+      - name: Pull project settings (with webpack + memory patches)
+        run: vercel pull --yes --token ${{ secrets.VERCEL_TOKEN }} --environment=production
+
+      - name: Build
+        run: vercel build --prod --token ${{ secrets.VERCEL_TOKEN }}
+        env:
+          SKIP_DB_MIGRATIONS: '1'
+          TURBO_CONCURRENCY: '1'
+
+      - name: Deploy
+        run: vercel deploy --prebuilt --prod --token ${{ secrets.VERCEL_TOKEN }} --yes
+
+      - name: Show URL
+        run: |
+          echo "============================================"
+          echo "Deploy pronto! Acesse:"
+          echo "https://cal-diy.vercel.app"
+          echo "============================================"
