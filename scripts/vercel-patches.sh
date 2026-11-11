@@ -10,37 +10,39 @@ sed -i 's/rmdir/rm/g' node_modules/zod-prisma-types/dist/classes/directoryHelper
 echo "[patch] 2/3: remove throws + turbopack from next.config.ts"
 sed -i -e '/Please set/d' -e '/turbopack: {}/d' apps/web/next.config.ts
 
-echo "[patch] 3/3: add webpack config to handle node: imports"
+echo "[patch] 3/3: add NormalModuleReplacementPlugin to handle node: imports in webpack"
 python3 << 'PYEOF'
-import re
 with open('apps/web/next.config.ts') as f:
     content = f.read()
 
-if 'node:process' in content:
-    print('  already patched')
+if 'NormalModuleReplacementPlugin' in content:
+    print('  already patched with NormalModuleReplacementPlugin')
 else:
-    # Build alias map for common node: builtins
-    node_modules = ['process', 'path', 'fs', 'crypto', 'stream', 'util', 'buffer',
-                    'os', 'url', 'child_process', 'http', 'https', 'net', 'tls',
-                    'zlib', 'events', 'querystring', 'string_decoder', 'timers',
-                    'worker_threads', 'perf_hooks', 'assert', 'dns', 'dgram',
-                    'cluster', 'readline', 'repl', 'vm', 'tty', 'v8', 'sys',
-                    'punycode', 'module', 'inspector', 'async_hooks', 'trace_events']
-    alias_str = ', '.join(f'"node:{m}": "{m}"' for m in node_modules)
+    # Remove any previous webpack: config we added (resolve.alias approach)
+    import re
+    content = re.sub(
+        r'\s*webpack: \(config\) => \{\s*config\.resolve\.alias = \{[^}]+\};\s*return config;\s*\},?\s*',
+        '\n',
+        content
+    )
 
-    patch = f'''    webpack: (config) => {{
-      config.resolve.alias = {{ ...config.resolve.alias, {alias_str} }};
+    # Insert NormalModuleReplacementPlugin before "async rewrites()"
+    patch = '''    webpack: (config, { webpack: webpackInstance }) => {
+      config.plugins.push(
+        new webpackInstance.NormalModuleReplacementPlugin(/^node:/, (resource) => {
+          resource.request = resource.request.replace(/^node:/, '');
+        })
+      );
       return config;
-    }},
+    },
 '''
-    # Insert before "async rewrites()"
     if 'async rewrites()' in content:
         content = content.replace('    async rewrites()', patch + '    async rewrites()')
         with open('apps/web/next.config.ts', 'w') as f:
             f.write(content)
-        print('  patched: webpack node: aliases added')
+        print('  patched: NormalModuleReplacementPlugin added for node: imports')
     else:
-        print('  WARNING: "async rewrites()" not found in next.config.ts')
+        print('  WARNING: "async rewrites()" not found')
 PYEOF
 
 echo "[patch] done"
