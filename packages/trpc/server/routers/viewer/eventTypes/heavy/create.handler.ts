@@ -162,6 +162,7 @@ export const createHandler = async ({ ctx, input }: CreateOptions) => {
         throw new TRPCError({ code: "BAD_REQUEST", message: "URL Slug already exists for given user." });
       }
     }
-    throw new TRPCError({ code: "BAD_REQUEST" });
+    const errMsg = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+    throw new TRPCError({ code: "BAD_REQUEST", message: errMsg });
   }
 };
