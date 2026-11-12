@@ -38,7 +38,8 @@ export const useCreateEventType = (
       }
 
       if (err.data?.code === "BAD_REQUEST") {
-        error = `${err.data.code}: ${t("error_event_type_url_duplicate")}`;
+        // Show the actual server error message instead of a misleading generic "URL already exists"
+        error = err.message ? `${err.data.code}: ${err.message}` : `${err.data.code}: ${t("error_event_type_url_duplicate")}`;
       }
 
       if (err.data?.code === "UNAUTHORIZED") {
