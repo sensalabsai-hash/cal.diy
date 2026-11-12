@@ -31,9 +31,9 @@ jobs:
       - name: Install dependencies and copy app-store icons
         run: |
           yarn install --immutable
-          cd apps/web && node scripts/copy-app-store-static.js
-          # Create icon.svg fallback for apps that only have icon-dark.svg or icon-primary.svg
-          cd apps/web/public/app-store
+          cd apps/web
+          node scripts/copy-app-store-static.js
+          cd public/app-store
           for d in */; do
             if [ ! -f "$d/icon.svg" ]; then
               if [ -f "$d/icon-dark.svg" ]; then
