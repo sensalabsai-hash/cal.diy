@@ -22,18 +22,18 @@ jobs:
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
 
+      - name: Link Vercel project
+        run: vercel link --yes --token ${{ secrets.VERCEL_TOKEN }} --project cal-diy
+
+      - name: Pull project settings
+        run: vercel pull --yes --token ${{ secrets.VERCEL_TOKEN }} --environment=production
+
       - name: Install dependencies and copy app-store icons
         run: |
           yarn install --immutable
           cd apps/web && node scripts/copy-app-store-static.js
         env:
           TURBO_CONCURRENCY: '1'
-
-      - name: Link Vercel project
-        run: vercel link --yes --token ${{ secrets.VERCEL_TOKEN }} --project cal-diy
-
-      - name: Pull project settings
-        run: vercel pull --yes --token ${{ secrets.VERCEL_TOKEN }} --environment=production
 
       - name: Build
         run: vercel build --prod --token ${{ secrets.VERCEL_TOKEN }}
